@@ -74,6 +74,7 @@ async fn send_voucher_code(code: &str, cookie_content: &str, log_file: &mut std:
 			writeln!(log_file, "{}", text);
 			println!("{}", text);
 			println!("Claim Berhasil!");
+			sleep(Duration::from_secs(5)).await;
 			break;
 		} else if status == reqwest::StatusCode::OK && text.contains("\"error\":76100003") {
 			println!("Cooldown detected. Waiting for 1 minute...");
