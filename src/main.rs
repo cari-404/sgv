@@ -78,7 +78,7 @@ async fn send_voucher_code(code: &str, cookie_content: &str, log_file: &mut std:
 			break;
 		} else if status == reqwest::StatusCode::OK && text.contains("\"error\":76100003") {
 			println!("Cooldown detected. Waiting for 1 minute...");
-			sleep(Duration::from_secs(60)).await;
+			sleep(Duration::from_secs(30)).await;
 			continue;
 		} else if status == reqwest::StatusCode::IM_A_TEAPOT {
 			println!("Gagal, status code: 418 - I'm a teapot. Mencoba kembali...");
