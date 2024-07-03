@@ -68,14 +68,14 @@ async fn send_voucher_code(code: &str, cookie_content: &str) -> Result<()> {
 		let status = response.status();
 		println!("{}", status);
 		let text = response.text().await?;	
-		if status == reqwest::StatusCode::OK {
+		if status == reqwest::StatusCode::OK && !text.contains("\"error\":76100003")  {
 			println!("{}", text);
 			println!("Claim Berhasil!");
-			if text.contains("\"error\":76100003") {
-				println!("Cooldown detected. Waiting for 1 minute...");
-				sleep(Duration::from_secs(60)).await;
-			}
 			break;
+		} else if status == reqwest::StatusCode::OK && text.contains("\"error\":76100003") {
+			println!("Cooldown detected. Waiting for 1 minute...");
+			sleep(Duration::from_secs(60)).await;
+			continue;
 		} else if status == reqwest::StatusCode::IM_A_TEAPOT {
 			println!("Gagal, status code: 418 - I'm a teapot. Mencoba kembali...");
 			println!("{}", text);
