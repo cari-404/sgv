@@ -7,9 +7,10 @@ use anyhow::Result;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::error::Error;
+use chrono::Utc;
 use tokio::time::{sleep, Duration};
 
-async fn send_voucher_code(code: &str, cookie_content: &str) -> Result<()> {
+async fn send_voucher_code(code: &str, cookie_content: &str, log_file: &mut std::fs::File) -> Result<()> {
 	let cookie_content_owned = cookie_content.to_string();
 
 	// Pass the cloned String to extract_csrftoken
@@ -25,6 +26,7 @@ async fn send_voucher_code(code: &str, cookie_content: &str) -> Result<()> {
 	let body_str = serde_json::to_string(&body_json)?;
 
 	println!("{}", body_str);
+	writeln!(log_file, "{}", body_str);
 	
 	let mut headers = reqwest::header::HeaderMap::new();
 	headers.insert("User-Agent", reqwest::header::HeaderValue::from_static("Android app Shopee appver=29330 app_type=1"));
@@ -69,6 +71,7 @@ async fn send_voucher_code(code: &str, cookie_content: &str) -> Result<()> {
 		println!("{}", status);
 		let text = response.text().await?;	
 		if status == reqwest::StatusCode::OK && !text.contains("\"error\":76100003")  {
+			writeln!(log_file, "{}", text);
 			println!("{}", text);
 			println!("Claim Berhasil!");
 			break;
@@ -157,17 +160,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	File::open(&file_path)?.read_to_string(&mut cookie_content)?;
 
     let prefix = "SGV500MP05RVW";
-	    // Read the start point from the user
-    print!("Enter the start point (e.g., SGV500MP05RVW0DX): ");
-    io::stdout().flush()?;  // Flush stdout to ensure the prompt is shown
-    let mut start_point = String::new();
-    io::stdin().read_line(&mut start_point)?;
-    let start_point = start_point.trim();  // Trim any whitespace or newlines
+    let start_point = get_user_input("Enter the start point (e.g., SGV500MP05RVW0DX): ");
+    let start_time = Utc::now();
+    let log_file_name = format!("{}_voucher_log.txt", start_time.format("%Y-%m-%d_%H-%M-%S"));
+    let mut log_file = std::fs::File::create(&log_file_name)?;
 
-    let combinations = generate_combinations(prefix, start_point);
+    println!("Starting voucher generation. Log file: {}", log_file_name);
+    let combinations = generate_combinations(prefix, &start_point);
 
     for combo in combinations {
-        send_voucher_code(&combo, &cookie_content).await?;
+        send_voucher_code(&combo, &cookie_content, &mut log_file).await?;
     }
 
     Ok(())
